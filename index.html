@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador de Países</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="context-title">
+    <h1>Explorador de Países</h1>
+        <p id="title-context">Ferramenta que possibilita a busca de países, estados e cidades do mundo todo.</p>
+        <form id="search-form"> <!-- Área para a busca dos países -->
+            <label for="search-input">Buscar País</label> 
+        <!-- Área do botão de buscar o país / placeholder(texto de exemplo) / autocomplete(tirar as sugestão de conteúdo)-->
+            <input id="search-input" type="search" name="country" placeholder="Ex: Brasil" autocomplete="off">
+            <button type="submit">Buscar</button>
+            <button type="button" id="clear-button">Limpar</button>
+        </form>
+    </header>
+    
+    <main>
+        <p id="status" role="status" aria-live="polite"></p>
+        <ul id="country-list"></ul>
+    </main>
+
+    <footer>
+        <p><a href="https://countriesnow.space/" target="_blank" rel="noopener">CountriesNow API</a></p>
+    </footer> 
+
+
+    <dialog id="detail-dialog" aria-labelledby="detail-title">
+        <h2 id="detail-title"></h2>      
+        <div id="detail-body"></div>     
+        <button type="button" id="close-dialog">Fechar</button>
+    </dialog>
+
+
+
+
+
+<script src="script.js"></script>
+</body>
+</html>
