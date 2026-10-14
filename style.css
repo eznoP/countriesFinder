@@ -9,7 +9,7 @@
   --color-primary: #298631;
   --color-primary-dark: #27b5d8;
   --color-border: #cbd2d9;
-  --color-focus: #204640;
+  --color-focus: #111827;
   --color-error: #a4161a;
   --color-success: #0b6e4f;
   --radius: 8px;
@@ -37,7 +37,7 @@ header,
 .header {
   width: 100%;
   border-radius: 16px;
-  padding: 1.5rem 10rem;
+  padding: 1.5rem clamp(1rem, 5vw, 10rem);
   text-align: center;
   color: #ffffff;
   background: var(--color-primary);
@@ -111,8 +111,8 @@ button {
 }
 
 button:hover {
-  background: #288e1b;
-  border-color: #faf7f7;
+  background: #217417;
+  border-color: #217417;
 }
 
 /* outline de foco da acao */
@@ -254,8 +254,4 @@ button:hover {
 footer p,
 .footer p {
     text-align: center;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
 }

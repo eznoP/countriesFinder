@@ -10,18 +10,22 @@
     <div class="container">
     <header>
     <h1 id="title">Explorador de Países</h1>
-        <p id="title-context">Ferramenta que possibilita a busca de países, estados e cidades do mundo todo.</p>
+        <p id="title-context">Consulte países, pesquise pelo nome e veja informações detalhadas.</p>
         <form id="search-form"> <!-- Área para a busca dos países -->
-            <label for="search-input">Buscar País</label> 
+            <div class="field">
+                <label for="search-input">Buscar País</label>
         <!-- Área do botão de buscar o país / placeholder(texto de exemplo) / autocomplete(tirar as sugestão de conteúdo)-->
-            <input id="search-input" type="search" name="country" placeholder="Ex: Brasil" autocomplete="off">
-            <button type="submit">Buscar</button>
-            <button type="button" id="clear-button">Limpar</button>
+                <input id="search-input" type="search" name="country" placeholder="Ex: Brasil" autocomplete="off">
+            </div>
+            <div class="actions">
+                <button type="submit">Buscar</button>
+                <button type="button" id="clear-button">Limpar</button>
+            </div>
         </form>
     </header>
     
     <main>
-        <p id="status" role="status" aria-live="polite"></p>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
         <ul id="country-list"></ul>
     </main>
 
@@ -29,10 +33,12 @@
         <p><a href="https://countriesnow.space/" target="_blank" rel="noopener">CountriesNow API</a></p>
     </footer> 
 
-    <dialog id="detail-dialog" aria-labelledby="detail-title">
-        <h2 id="detail-title"></h2>      
-        <div id="detail-body"></div>     
-        <button type="button" id="close-dialog">Fechar</button>
+    <dialog id="detail-dialog" class="dialog" aria-labelledby="detail-title">
+        <div class="detail">
+            <h2 id="detail-title"></h2>
+            <div id="detail-body"></div>
+            <button type="button" id="close-dialog">Fechar</button>
+        </div>
     </dialog>
     </div>
 
