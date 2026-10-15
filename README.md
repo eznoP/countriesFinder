@@ -7,8 +7,8 @@ ou dados estáticos.
 
 ## Integrantes
 
-- Enzo Rios ([@eznoP](https://github.com/eznoP))
-- Antônio Lucas Neto ([@toin040](https://github.com/toin040))
+- Enzo Rios Veras Ost Lopes
+- Antônio Lucas de Oliveira Neto 
 
 ## Principais funcionalidades
 
