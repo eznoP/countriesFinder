@@ -12,6 +12,26 @@ const detailDialog = document.getElementById('detail-dialog');
 const detailBody = document.getElementById('detail-body');
 const closeDialog = document.getElementById('close-dialog');
 
+// Intl.DisplayNames: tradutor de códigos de região nativo do navegador
+const regionNames = new Intl.DisplayNames(['pt-BR'], { type: 'region' });
+
+// Traduz o ISO2 para português. Código não reconhecido volta como ele mesmo,
+// e nesse caso ficamos com o nome original em inglês
+function localName(iso2, fallback) {
+    if (!iso2) return fallback;
+    try {
+        const translated = regionNames.of(iso2);
+        return translated === iso2 ? fallback : translated;
+    } catch {
+        return fallback;
+    }
+}
+
+// Tira acentos para a busca: "sao" encontra "São Tomé e Príncipe"
+function normalize(text) {
+    return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+}
+
 async function fetchFromApi(path) { 
 // async - permite usar await e faz a função devolver uma Promise(representa a eventual conclusão - ou falha- de uma operação assíncrona)
     const res = await fetch(API_BASE + path); 
@@ -33,13 +53,14 @@ function mergeCountries(capitals, currencies, flags){
     const currencyMap = byIso(currencies);
     const flagMap = byIso(flags);
     return capitals.map(c => ({
-        name: c.name,
+        name: localName(c.iso2, c.name), // nome exibido e buscado
+        apiName: c.name, // /q?country= só aceita o nome em inglês
         iso2: c.iso2,
         iso3: c.iso3,
         capital: c.capital,
         currency: currencyMap.get(c.iso2)?.currency,
         flag: flagMap.get(c.iso2)?.flag
-    }));   
+    })).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')); // traduzir desordena a lista
 }
 
 // Escreve a mensagem de status e marca o tipo, que o CSS usa para colorir
@@ -79,8 +100,7 @@ function createCountryCard(country) {
         // RF04: os ~28 países sem bandeira na API mostram um substituto
         const placeholder = document.createElement('span');
         placeholder.className = 'flag-placeholder';
-        placeholder.textContent = display(country.iso2);
-        placeholder.setAttribute('aria-hidden', 'true');
+        placeholder.textContent = 'Bandeira Não Registrada';
         button.appendChild(placeholder);
     }
 
@@ -138,9 +158,10 @@ async function loadCountries(){
 
 // RF02: /q?country= só aceita nome exato, então a busca parcial é filtro local
 function searchCountries(term) {
-    const q = term.trim().toLowerCase();
+    const q = normalize(term.trim());
     if (!q) return allCountries; // campo vazio volta à listagem completa
-    return allCountries.filter(c => c.name.toLowerCase().includes(q));
+    // aceita os dois idiomas: "alemanha" e "germany" acham o mesmo país
+    return allCountries.filter(c => normalize(c.name).includes(q) || normalize(c.apiName).includes(q));
 }
 
 function runSearch() {
@@ -174,18 +195,18 @@ function appendDetailRow(dl, label, value) {
 
 // Pega o último registro de populationCounts (array crescente desde 1960)
 function formatPopulation(result) {
-    if (result.status !== 'fulfilled') return null;
-    const counts = result.value?.populationCounts;
-    const last = counts?.[counts.length - 1];
-    if (!last) return null;
+    if (result.status !== 'fulfilled') return null; // a requisição falhou
+    const counts = result.value.populationCounts;
+    if (!counts || counts.length === 0) return null; // veio sem histórico
+    const last = counts[counts.length - 1]; // length - 1 é o índice do último
     return `${last.value.toLocaleString('pt-BR')} habitantes (${last.year})`;
 }
 
 function formatPosition(result) {
-    if (result.status !== 'fulfilled') return null;
-    const { lat, long } = result.value ?? {};
-    if (lat == null || long == null) return null;
-    return `Latitude ${lat}, Longitude ${long}`;
+    if (result.status !== 'fulfilled') return null; // a requisição falhou
+    const position = result.value;
+    if (position.lat === undefined || position.long === undefined) return null;
+    return `Latitude ${position.lat}, Longitude ${position.long}`;
 }
 
 // RF03: nome, capital, moeda, bandeira, código e ISO já vêm de allCountries.
@@ -199,7 +220,7 @@ async function openDetail(country) {
     loading.textContent = 'Carregando detalhes...';
     detailBody.appendChild(loading);
 
-    const query = `?country=${encodeURIComponent(country.name)}`;
+    const query = `?country=${encodeURIComponent(country.apiName)}`;
     // allSettled e não all: se só a população falhar, a localização ainda aparece
     const [population, position] = await Promise.allSettled([
         fetchFromApi(`/countries/population/q${query}`),
@@ -220,7 +241,8 @@ async function openDetail(country) {
     dl.className = 'detail-list';
     appendDetailRow(dl, 'Capital', country.capital);
     appendDetailRow(dl, 'Moeda', country.currency);
-    appendDetailRow(dl, 'Código do país', country.iso2 && country.iso3 ? `${country.iso2} / ${country.iso3}` : country.iso2);
+    appendDetailRow(dl, 'Código ISO2', country.iso2);
+    appendDetailRow(dl, 'Código ISO3', country.iso3);
     appendDetailRow(dl, 'População', formatPopulation(population));
     appendDetailRow(dl, 'Localização', formatPosition(position));
     detailBody.appendChild(dl);
