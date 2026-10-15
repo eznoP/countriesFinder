@@ -104,11 +104,11 @@ function createCountryCard(country) {
 }
 
 // Desenha a lista inteira na <ul>
-function renderCountries(list) {
+function renderCountries(list, emptyMessage) {
     countryList.replaceChildren(); // limpa o render anterior, senão os cards empilham
 
     if (list.length === 0) {
-        setStatus('Nenhum país encontrado.', 'empty');
+        setStatus(emptyMessage ?? 'Nenhum país encontrado.', 'empty');
         return;
     }
 
@@ -135,4 +135,106 @@ async function loadCountries(){
         console.error(err);
     }
 }
+
+// RF02: /q?country= só aceita nome exato, então a busca parcial é filtro local
+function searchCountries(term) {
+    const q = term.trim().toLowerCase();
+    if (!q) return allCountries; // campo vazio volta à listagem completa
+    return allCountries.filter(c => c.name.toLowerCase().includes(q));
+}
+
+function runSearch() {
+    if (allCountries.length === 0) return; // ainda carregando: não apagar o status
+    const term = searchInput.value;
+    setStatus('');
+    renderCountries(searchCountries(term), `Nenhum país encontrado para "${term.trim()}".`);
+}
+
+searchForm.addEventListener('submit', (event) => {
+    event.preventDefault(); // sem isso o form recarrega a página e perde a lista
+    runSearch();
+});
+// filtro local, sem rede: debounce só adicionaria atraso
+searchInput.addEventListener('input', runSearch);
+clearButton.addEventListener('click', () => {
+    searchInput.value = '';
+    searchInput.focus(); // foco volta ao campo, quem usa teclado não se perde
+    runSearch();
+});
+
+
+// Monta um par rótulo/valor do <dl>. dt = termo, dd = definição
+function appendDetailRow(dl, label, value) {
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.textContent = display(value);
+    dl.append(dt, dd);
+}
+
+// Pega o último registro de populationCounts (array crescente desde 1960)
+function formatPopulation(result) {
+    if (result.status !== 'fulfilled') return null;
+    const counts = result.value?.populationCounts;
+    const last = counts?.[counts.length - 1];
+    if (!last) return null;
+    return `${last.value.toLocaleString('pt-BR')} habitantes (${last.year})`;
+}
+
+function formatPosition(result) {
+    if (result.status !== 'fulfilled') return null;
+    const { lat, long } = result.value ?? {};
+    if (lat == null || long == null) return null;
+    return `Latitude ${lat}, Longitude ${long}`;
+}
+
+// RF03: nome, capital, moeda, bandeira, código e ISO já vêm de allCountries.
+// Só população e localização exigem requisição
+async function openDetail(country) {
+    detailTitle.textContent = country.name;
+    detailBody.replaceChildren();
+    detailDialog.showModal();
+
+    const loading = document.createElement('p');
+    loading.textContent = 'Carregando detalhes...';
+    detailBody.appendChild(loading);
+
+    const query = `?country=${encodeURIComponent(country.name)}`;
+    // allSettled e não all: se só a população falhar, a localização ainda aparece
+    const [population, position] = await Promise.allSettled([
+        fetchFromApi(`/countries/population/q${query}`),
+        fetchFromApi(`/countries/positions/q${query}`)
+    ]);
+
+    detailBody.replaceChildren();
+
+    if (country.flag) {
+        const img = document.createElement('img');
+        img.className = 'detail-flag';
+        img.src = country.flag;
+        img.alt = `Bandeira de ${country.name}`;
+        detailBody.appendChild(img);
+    }
+
+    const dl = document.createElement('dl');
+    dl.className = 'detail-list';
+    appendDetailRow(dl, 'Capital', country.capital);
+    appendDetailRow(dl, 'Moeda', country.currency);
+    appendDetailRow(dl, 'Código do país', country.iso2 && country.iso3 ? `${country.iso2} / ${country.iso3}` : country.iso2);
+    appendDetailRow(dl, 'População', formatPopulation(population));
+    appendDetailRow(dl, 'Localização', formatPosition(position));
+    detailBody.appendChild(dl);
+}
+
+// Um listener na <ul> em vez de 250 nos botões: o clique sobe até aqui
+countryList.addEventListener('click', (event) => {
+    const button = event.target.closest('.country-button');
+    if (!button) return;
+    const country = allCountries.find(c => c.iso2 === button.dataset.iso2);
+    if (country) openDetail(country);
+});
+
+// showModal/close já devolvem o foco ao botão clicado sozinhos
+closeDialog.addEventListener('click', () => detailDialog.close());
+
 loadCountries();
